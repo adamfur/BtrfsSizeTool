@@ -2,6 +2,8 @@ import os
 from subprocess import Popen, PIPE, STDOUT
 import re
 import hashlib
+import lz4
+
 
 class Index():
     def __init__(self):
@@ -28,10 +30,10 @@ class Index():
 
     def scanSubvolume(self, subvolume):
         hex = hashlib.sha1(subvolume).hexdigest()
-        file = self.folder + "/" + hex
-        completed = file  + ".complete"
+        file = self.folder + "/" + hex + ".lz4"
+        completed = self.folder + "/" + hex  + ".complete"
 
-        #print "scaning: " + subvolume + " (" + hex + ")"
+        print "scaning: " + subvolume + " (" + hex + ")"
 
         if os.path.exists(completed):
             return
@@ -48,6 +50,6 @@ class Index():
             list.append(match.group(0))
 
         with open(file, "w") as text_file:
-            text_file.write("\n".join(list))
+            text_file.write(lz4.compress("\n".join(list)))
 
         open(completed, 'a').close()

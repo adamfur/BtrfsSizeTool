@@ -2,6 +2,7 @@
 import hashlib
 import sys
 import re
+import lz4
 from Entry import Entry
 from Index import Index
 
@@ -22,11 +23,15 @@ class Program:
         lookup = {}
         for item in list:
             hex = hashlib.sha1(item).hexdigest()
-            file = self.folder + "/" + hex
+            file = self.folder + "/" + hex + ".lz4"
 
             print "processing: " + file
-            with open(file, "r") as f:
-                for line in f:
+            with open(file, "r") as fd:
+                compressed = fd.read()
+                decompressed = lz4.decompress(compressed)
+                lines = decompressed.split('\n')
+
+                for line in lines:
                     file = Entry(line)
 
                     if file.sha1 in lookup:
@@ -41,13 +46,14 @@ class Program:
         kb = 1024
         mb = kb*kb
         gb = kb*mb
+        resolution = 3
 
         if (size >= gb):
-            return str(round(size / float(gb), 2)) + " gb"
+            return str(round(size / float(gb), resolution)) + " gb"
         elif (size >= mb):
-            return str(round(size / float(mb), 2)) + " mb"
+            return str(round(size / float(mb), resolution)) + " mb"
         elif (size >= kb):
-            return str(round(size / float(kb), 2)) + " kb"
+            return str(round(size / float(kb), resolution)) + " kb"
 
         return size
 
