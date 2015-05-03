@@ -6,6 +6,10 @@ class Entry:
     def __init__(self, string):
         matchAllocation = re.compile("^inode (\d+) file offset (\d+) len (\d+) disk start (\d+) offset (\d+) gen (\d+) flags (\w+) (.*)$")
         match = matchAllocation.match(string)
+        self.sha1 = "<@@@>"
+
+        if match is None:
+            return
 
         self.inode = match.group(1)
         self.offset = match.group(2)

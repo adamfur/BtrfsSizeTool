@@ -3,6 +3,7 @@ from subprocess import Popen, PIPE, STDOUT
 import re
 import hashlib
 import lz4
+from Subvolume import Subvolume
 
 
 class Index():
@@ -10,6 +11,7 @@ class Index():
         self.matchSubvolume = re.compile("^ID (\d+) gen (\d+) top level (\d+) path (.+)$")
         self.matchAllocation = re.compile("^inode (\d+) file offset (\d+) len (\d+) disk start (\d+) offset (\d+) gen (\d+) flags (\w+) (.*)$")
         self.folder = ".btrfs"
+        self.subvolume = Subvolume()
         pass
 
     def create(self):
@@ -17,15 +19,9 @@ class Index():
             os.makedirs(self.folder)
 
     def scan(self):
-        p = Popen("btrfs subvolume list . | sort", shell=True, stdout=PIPE, stderr=STDOUT)
+        subvolumes = self.subvolume.listSubvolumes()
 
-        for line in p.stdout.readlines():
-            match = self.matchSubvolume.match(line)
-
-            if match is None:
-                continue
-
-            subvolume = match.group(4)
+        for subvolume in subvolumes:
             self.scanSubvolume(subvolume)
 
     def scanSubvolume(self, subvolume):

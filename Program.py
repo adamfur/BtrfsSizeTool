@@ -5,13 +5,23 @@ import re
 import lz4
 from Entry import Entry
 from Index import Index
+from Subvolume import Subvolume
 
+
+def aggregateArgv(start):
+    result = []
+
+    for x in range(start, len(sys.argv)):
+        result.append(sys.argv[x])
+
+    return result
 
 class Program:
     def __init__(self):
         self.index = Index()
         self.folder = ".btrfs"
         self.matchAllocation = re.compile("^inode (\d+) file offset (\d+) len (\d+) disk start (\d+) offset (\d+) gen (\d+) flags (\w+) (.*)$")
+        self.subvolume = Subvolume()
 
     def start(self):
         self.index.create()
@@ -42,6 +52,49 @@ class Program:
 
         print "Accumulated size is: ", self.printSize(sum)
 
+    def remove(self, list):
+        omega, crap = self.buildLookup(self.subvolume.listSubvolumes())
+        exclude, files = self.buildLookup(list)
+        result = self.blabla(omega, exclude, files)
+
+        print "Accumulated freed size is: ", self.printSize(result)
+        #print "Files to remove: ", result
+
+    def blabla(self, omega, exclude, files):
+        sum = 0
+
+        for key in exclude:
+            if omega[key] == exclude[key]:
+                sum += files[key].size
+                pass
+
+        return sum
+
+    def buildLookup(self, subvolumes):
+        lookup = {}
+        files = {}
+
+        for subvolume in subvolumes:
+            print "* " + subvolume
+            hex = hashlib.sha1(subvolume).hexdigest()
+            file = self.folder + "/" + hex + ".lz4"
+
+            with open(file, "r") as fd:
+                compressed = fd.read()
+                decompressed = lz4.decompress(compressed)
+                lines = decompressed.split('\n')
+
+                for line in lines:
+                    entry = Entry(line)
+                    files[entry.sha1] = entry
+
+                    if entry.sha1 in lookup:
+                        lookup[entry.sha1] += 1
+                    else:
+                        lookup[entry.sha1] = 1
+
+        return lookup, files
+
     def printSize(self, size):
         kb = 1024
         mb = kb*kb
@@ -55,22 +108,16 @@ class Program:
         elif (size >= kb):
             return str(round(size / float(kb), resolution)) + " kb"
 
-        return size
-
-
+        return str(size) + " b"
 
 program = Program()
 
 program.start()
 
 print "-------------------------------------------------------------------------"
-#print 'Number of arguments:', len(sys.argv), 'arguments.'
-#print 'Argument List:', str(sys.argv)
 
 if len(sys.argv) > 1:
     if sys.argv[1] == "consume":
-        list = []
-        for x in range(2, len(sys.argv)):
-            list.append(sys.argv[x])
-
-        program.logic(list)
+        program.logic(aggregateArgv(2))
+    elif sys.argv[1] == "remove":
+        program.remove(aggregateArgv(2))
