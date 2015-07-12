@@ -5,7 +5,9 @@ import re
 import lz4
 from Entry import Entry
 from Index import Index
+from Lookup import Lookup
 from Subvolume import Subvolume
+from Wordlist import Wordlist
 
 
 def aggregateArgv(start):
@@ -110,6 +112,22 @@ class Program:
 
         return str(size) + " b"
 
+    def indexAll(self, param):
+        wordlist = Wordlist()
+        lookup = Lookup()
+
+        for key in self.subvolume.listSubvolumes():
+            print key
+            for file in self.subvolume.read(key):
+                e = Entry(file)
+                for str in re.split("[^a-z0-9]*", e.path.lower()):
+                    ix = wordlist.add(str)
+                    lookup.add(ix, e.path)
+
+
+            lookup.search(wordlist.add("review"))
+
+
 program = Program()
 
 program.start()
@@ -121,3 +139,5 @@ if len(sys.argv) > 1:
         program.logic(aggregateArgv(2))
     elif sys.argv[1] == "remove":
         program.remove(aggregateArgv(2))
+    elif sys.argv[1] == "index":
+        program.indexAll(aggregateArgv(2))

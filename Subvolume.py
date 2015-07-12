@@ -1,5 +1,7 @@
+import hashlib
 import re
 from subprocess import Popen, PIPE, STDOUT
+import lz4
 
 
 class Subvolume():
@@ -20,4 +22,11 @@ class Subvolume():
 
         return list
 
+    def read(self, subvolume):
+            hex = hashlib.sha1(subvolume).hexdigest()
+            file = ".btrfs/" + hex + ".lz4"
 
+            with open(file, "r") as fd:
+                compressed = fd.read()
+                decompressed = lz4.decompress(compressed)
+                return decompressed.split('\n')
